@@ -1,46 +1,47 @@
 import socket
+from functools import wraps
 
-class Http:
-    def __init__(self, host="0.0.0.0", port=8082):
-        self.host = host
-        self.port = port
-        self.routes = {}  # 路由字典
-        print(f"🌐 HTTP server ready on http://{self.host}:{self.port}")
+class MiniApp:
+    def __init__(self):
+        self.routes = {}  # 保存 path -> function
 
-    def run(self):
+    def route(self, path):
+        def decorator(func):
+            self.routes[path] = func
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
+
+    def run(self, host="0.0.0.0", port=8000):
         s = socket.socket()
-        s.bind((self.host, self.port))
+        s.bind((host, port))
         s.listen(5)
-        print("🚀 Server running...")
+        print(f"🌐 MiniApp running on http://{host}:{port}")
 
         while True:
             conn, addr = s.accept()
-            print("🔗 Connected:", addr)
             with conn:
                 request = conn.recv(4096).decode("utf-8", errors="ignore")
                 if not request:
                     continue
 
-                # 解析请求行
                 first_line = request.split("\r\n", 1)[0]
                 try:
                     method, path, _ = first_line.split(" ", 2)
                 except ValueError:
                     continue
 
-                # 处理请求
-                resp = self.handle_request(path)
+                if path in self.routes:
+                    body = self.routes[path]()
+                    resp = self._response(body)
+                else:
+                    resp = self._response(f"<h1>404 Not Found</h1><p>Path={path}</p>", "404 Not Found")
+
                 conn.sendall(resp)
 
-    def handle_request(self, path):
-        if path in self.routes:
-            body = self.routes[path]()  # 调用注册的函数
-            return self.response(body)
-        else:
-            # 找不到路由 → 404
-            return self.get404(path)
-
-    def response(self, body, status="200 OK"):
+    def _response(self, body, status="200 OK"):
         return (
             f"HTTP/1.1 {status}\r\n"
             "Content-Type: text/html; charset=utf-8\r\n"
@@ -48,8 +49,3 @@ class Http:
             "Connection: close\r\n\r\n"
             f"{body}"
         ).encode("utf-8")
-
-    def get404(self, path):
-        """默认 404"""
-        body = f"<h1>404 Not Found</h1><p>Path={path}</p>"
-        return self.response(body, "404 Not Found")

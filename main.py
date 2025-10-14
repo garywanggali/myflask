@@ -1,20 +1,18 @@
-from http import Http
+from http import MiniApp
 
 HOST, PORT = "0.0.0.0", 8082
 
 def getRoot():
-    body = "<h1>Hello</h1>"
-    return body
+    return "<h1>Hello</h1>"
 
 def getHello():
-    body = "<h1>Hello World</h1>"
-    return body
+    return "<h1>Hello World</h1>"
 
-http = Http(HOST, PORT)
+http = MiniApp()
 
 http.routes = {
     "/": getRoot,
     "/hello": getHello,
 }
 
-http.run()
+http.run(HOST, PORT)
