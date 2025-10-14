@@ -1,21 +1,14 @@
-from myflask import myflask
+from http import *
 
-app = myflask("0.0.0.0", 8002)
+ 
 
-@app.route("/")
-def index():
-    return "welcome to the class"
+class MyHttp(Http):
+  def getRoot(self, path):
+    body = f"<h1>Hello</h1><p>Path={path}</p>"
+    self.response(body)
 
-@app.route("/hello")
-def hello():
-    return "world"
+  def get404(self, path):
+    body = f"<h1>404 Not Found</h1><p>Path={path}</p>"
+    self.response(body)
 
-@app.route("/login", methods=["GET"])
-def login():
-    return '<form method="post" url="/login"><input name="username" /><input type="submit"/></form>'
-
-@app.route("/login", methods=["POST"])
-def login():
-    return 'you have submited some thing'
-
-app.run()
+MyHttp(HOST,PORT)
