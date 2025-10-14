@@ -1,18 +1,16 @@
-from http import MiniApp
+from http import MiniApp, Request
+from html import escape
 
-HOST, PORT = "0.0.0.0", 8082
+app = MiniApp()
 
-def getRoot():
-    return "<h1>Hello</h1>"
+@app.route("/")
+def index(request):
+    return "<h1>Welcome to MiniApp</h1><p>Try /hello?name=World</p>"
 
-def getHello():
-    return "<h1>Hello World</h1>"
+@app.route("/hello")
+def hello(request: Request):
+    # 从 request.args 获取 GET 参数
+    name = request.args.get("name", "Flask")
+    return f"<h1>Hello, {escape(name)}!</h1>"
 
-http = MiniApp()
-
-http.routes = {
-    "/": getRoot,
-    "/hello": getHello,
-}
-
-http.run(HOST, PORT)
+app.run("0.0.0.0", 8000)

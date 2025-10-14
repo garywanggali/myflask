@@ -1,16 +1,30 @@
 import socket
 from functools import wraps
+from urllib.parse import urlparse, parse_qs
+from html import escape
+
+class Request:
+    """封装 HTTP 请求信息"""
+    def __init__(self, raw_path, method, headers, body):
+        self.method = method
+        self.headers = headers  # 原始头部字符串
+        self.body = body
+        url = urlparse(raw_path)
+        self.path = url.path
+        # 将 query 参数解析成字典，取第一个值
+        self.args = {k: v[0] for k, v in parse_qs(url.query).items()}
 
 class MiniApp:
     def __init__(self):
-        self.routes = {}  # 保存 path -> function
+        self.routes = {}  # path -> function
 
     def route(self, path):
+        """装饰器注册路由"""
         def decorator(func):
             self.routes[path] = func
             @wraps(func)
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
+            def wrapper(request):
+                return func(request)
             return wrapper
         return decorator
 
@@ -23,21 +37,28 @@ class MiniApp:
         while True:
             conn, addr = s.accept()
             with conn:
-                request = conn.recv(4096).decode("utf-8", errors="ignore")
-                if not request:
+                data = conn.recv(4096).decode("utf-8", errors="ignore")
+                if not data:
                     continue
 
-                first_line = request.split("\r\n", 1)[0]
+                # 解析请求行和头
+                request_line, headers_rest = data.split("\r\n", 1)
                 try:
-                    method, path, _ = first_line.split(" ", 2)
+                    method, raw_path, _ = request_line.split(" ", 2)
                 except ValueError:
                     continue
 
-                if path in self.routes:
-                    body = self.routes[path]()
+                headers_str, _, body = headers_rest.partition("\r\n\r\n")
+
+                # 构建 Request 对象
+                req = Request(raw_path, method, headers_str, body)
+
+                # 调用路由函数
+                if req.path in self.routes:
+                    body = self.routes[req.path](req)
                     resp = self._response(body)
                 else:
-                    resp = self._response(f"<h1>404 Not Found</h1><p>Path={path}</p>", "404 Not Found")
+                    resp = self._response(f"<h1>404 Not Found</h1><p>Path={req.path}</p>", "404 Not Found")
 
                 conn.sendall(resp)
 
