@@ -8,17 +8,17 @@ s.listen(5) # 等待客户端连接
 while True:
   conn,addr = s.accept() # 建立客户端连接
   print('连接地址：', addr)
-  request = conn.recv(4096).decode("utf-8", errors="ignore")
-  # 简单解析请求行
-  first_line = request.split("\r\n", 1)[0]
-  method, path, _ = first_line.split(" ", 2)
-  body = f"<h1>Hello</h1><p>Method={method}, Path={path}</p>"
-  resp = (
-    "HTTP/1.1 200 OK\r\n"
-    "Content-Type: text/html; charset=utf-8\r\n"
-    f"Content-Length: {len(body.encode())}\r\n"
-    "Connection: close\r\n\r\n"
-    f"{body}"
-  )
-  conn.sendall(resp.encode('utf-8')) # 发送欢迎信息
-  conn.close() # 关闭连接
+  with conn:
+    request = conn.recv(4096).decode("utf-8", errors="ignore")
+    # 简单解析请求行
+    first_line = request.split("\r\n", 1)[0]
+    method, path, _ = first_line.split(" ", 2)
+    body = f"<h1>Hello</h1><p>Method={method}, Path={path}</p>"
+    resp = (
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n"
+        f"Content-Length: {len(body.encode())}\r\n"
+        "Connection: close\r\n\r\n"
+        f"{body}"
+    )
+    conn.sendall(resp.encode('utf-8')) # 发送欢迎信息
