@@ -1,16 +1,21 @@
-from http import MiniApp, Request
-from html import escape
+from myflask import myflask
 
-app = MiniApp()
+app = myflask("0.0.0.0", 8002)
 
 @app.route("/")
-def index(request):
-    return "<h1>Welcome to MiniApp</h1><p>Try /hello?name=World</p>"
+def index():
+    return "welcome to the class"
 
 @app.route("/hello")
-def hello(request: Request):
-    # 从 request.args 获取 GET 参数
-    name = request.args.get("name", "Flask")
-    return f"<h1>Hello, {escape(name)}!</h1>"
+def hello():
+    return "world"
 
-app.run("0.0.0.0", 8000)
+@app.route("/login", methods=["GET"])
+def login():
+    return '<form method="post" url="/login"><input name="username" /><input type="submit"/></form>'
+
+@app.route("/login", methods=["POST"])
+def login():
+    return 'you have submited some thing'
+
+app.run()
